@@ -219,24 +219,33 @@ void loop() {
     // **********************
     // TTN
     // **********************
-    // Encode int as bytes
-    byte payload[8];
+    // Encode int as Cayenne
+    byte payload[16];
+    int idx = 0;
 
     // sds011
-    payload[0] = highByte(p10int);
-    payload[1] = lowByte(p10int);
-    payload[2] = highByte(p25int);
-    payload[3] = lowByte(p25int);
+    payload[idx++] = 100;       // PM10 (unit of 0.01 ug/m3)
+    payload[idx++] = 2;
+    payload[idx++] = highByte(p10int);
+    payload[idx++] = lowByte(p10int);
+    payload[idx++] = 25;        // PM2.5 (unit of 0.01 ug/m3)
+    payload[idx++] = 2;
+    payload[idx++] = highByte(p25int);
+    payload[idx++] = lowByte(p25int);
 
     // sensor (temperature / humidity)
-    payload[4] = highByte(hint); // humidity
-    payload[5] = lowByte(hint);
-    payload[6] = highByte(tint); // temperature
-    payload[7] = lowByte(tint);
+    payload[idx++] = 0;         // humidity (unit of 0.5%)
+    payload[idx++] = 104;
+    payload[idx++] = hint / 50;
+
+    payload[idx++] = 1;         // temperature (unit of 0.1 degree)
+    payload[idx++] = 103;
+    payload[idx++] = highByte(tint / 10);
+    payload[idx++] = lowByte(tint / 10);
 
     // send via TTN
     debugSerial.println("Sending data to TTN...");
-    ttn.sendBytes(payload, sizeof(payload));
+    ttn.sendBytes(payload, idx);
 
     // **********************
     // Sleep
