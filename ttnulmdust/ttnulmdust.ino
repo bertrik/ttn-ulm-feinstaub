@@ -175,8 +175,8 @@ void loop() {
     // ******************************************************************
     // Read sensor data (temperature / humidity)
     // ******************************************************************
-    int16_t hint = round(h * 100);
-    int16_t tint = round(t * 100);
+    int16_t hint = round(h * 2);
+    int16_t tint = round(t * 10);
 
     // **********************
     // SDS011
@@ -210,8 +210,8 @@ void loop() {
     float p10median = median(samples_p10, 10);
 
     // Encode float as int (20.98 becomes 2098)
-    int16_t p10int = round(p10median * 100);
-    int16_t p25int = round(p25median * 100);
+    int16_t p10int = (p10median < 327.67) ? round(p10median * 100) : 32767;
+    int16_t p25int = (p25median < 327.67) ? round(p25median * 100) : 32767;
 
     debugSerial.println("P2.5 median: " + String(p25median));
     debugSerial.println("P10  median: " + String(p10median));
@@ -223,25 +223,28 @@ void loop() {
     byte payload[16];
     int idx = 0;
 
-    // sds011
-    payload[idx++] = 100;       // PM10 (unit of 0.01 ug/m3)
+    // PM10 (unit of 0.01 ug/m3)
+    payload[idx++] = 1;
     payload[idx++] = 2;
     payload[idx++] = highByte(p10int);
     payload[idx++] = lowByte(p10int);
-    payload[idx++] = 25;        // PM2.5 (unit of 0.01 ug/m3)
+
+    // PM2.5 (unit of 0.01 ug/m3)
+    payload[idx++] = 2;
     payload[idx++] = 2;
     payload[idx++] = highByte(p25int);
     payload[idx++] = lowByte(p25int);
 
-    // sensor (temperature / humidity)
-    payload[idx++] = 0;         // humidity (unit of 0.5%)
-    payload[idx++] = 104;
-    payload[idx++] = hint / 50;
-
-    payload[idx++] = 1;         // temperature (unit of 0.1 degree)
+    // temperature (unit of 0.1 degree)
+    payload[idx++] = 3;
     payload[idx++] = 103;
-    payload[idx++] = highByte(tint / 10);
-    payload[idx++] = lowByte(tint / 10);
+    payload[idx++] = highByte(tint);
+    payload[idx++] = lowByte(tint);
+
+    // humidity (unit of 0.5%)
+    payload[idx++] = 4;
+    payload[idx++] = 104;
+    payload[idx++] = hint;
 
     // send via TTN
     debugSerial.println("Sending data to TTN...");
